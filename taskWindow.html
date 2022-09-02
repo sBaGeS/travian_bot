@@ -1,0 +1,248 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <style>
+    .flex-container {
+    display: flex;
+}
+
+.flex-child {
+    flex: 1;
+  }  
+
+.flex-child:first-child {
+    margin-right: 20px;
+} 
+  </style>
+  <meta charset="utf-8">
+  <title>Add tasks</title>
+</head>
+
+<body>
+    <h1>Add a task</h1>
+       <div>
+        <button style="margin-top: 5px;" id="getButton">Get villages</button>
+       </div>
+        <div>
+        <div id="select_root">
+        <div style="margin-top: 5px;">
+         <label for="villages">Select a village:</label>
+          <select id="villages" onchange="changeVillage()">
+            <option value="default" disabled selected>Please select a village</option>
+          </select>
+        </div>
+
+        <div style="margin-top: 5px;">
+          <label for="task">Repeat task?</label>
+          <select id="repeat" value="on_repeat" onchange="repeat_options()">
+            <option value="on_repeat" selected>On repeat</option>
+            <option value="single" >Single task</option>
+          </select>
+        </div>
+
+          <div style="margin-top: 5px;">
+          <label for="task">Select a task</label>
+          <select id="task" onchange="showOptions_resBuild()">
+            <option value="default" disabled selected>Please select a task</option>
+            <option id="build_res" value="build_res">Build resources</option>
+            <option id="build_city" value="build_city">Build buildings</option>
+            <option id="party" value="party">Hold a celebration</option>
+          </select>
+        </div>
+
+        <div style="margin-top: 5px;" id="resource_option_div">
+          <label for="res_build_options">Resource build options</label>
+          <select id="res_build_options" onchange="changeResBuildValue()">
+            <option value="default" disabled selected>Please select a resource</option>
+            <option id="even" value="even">Everything</option>
+            <option id="wood" value="wood">Wood</option>
+            <option id="clay" value="clay">Clay</option>
+            <option id="iron" value="iron">Iron</option>
+            <option id="crop" value="crop">Crop</option>
+            <option id="-crop" value="-crop">Everything exept crop</option>
+          </select>
+        </div>
+
+        <div style="margin-top: 5px;" id="city_build_options_div">
+          <label for="city_build_options">City build options</label>
+          <select id="city_build_options" onchange="changeCityBuildValue()">
+            <option value="default" disabled selected>Please select a building</option>
+            <option id="resources" value="resources" disabled style="font-weight: 900;">Resources</option>
+            <option id="sawmill" value="sawmill">Sawmill</option>
+            <option id="brickyard" value="brickyard">Brickyard</option>
+            <option id="iron foundry" value="iron foundry">Iron Foundry</option>
+            <option id="grain mill" value="grain mill">Grain Mill</option>
+            <option id="bakery" value="bakery">Bakery</option>
+            <option id="infrastructure" value="infrastructure" disabled style="font-weight: 900;">Infrastructure</option>
+            <option id="warehouse" value="warehouse">Warehouse</option>
+            <option id="granary" value="granary">Granary</option>
+            <option id="main building" value="main building">Main Building</option>
+            <option id="marketplace" value="marketplace">Marketplace</option>
+            <option id="embassy" value="embassy">Embassy</option>
+            <option id="town hall" value="town hall">Town Hall</option>
+            <option id="residence" value="residence">Residence</option>
+            <option id="palace" value="palace">Palace</option>
+            <option id="treasury" value="treasury">Treasury</option>
+            <option id="trade office" value="trade office">Trade Office</option>
+            <option id="granny" value="granny">Granny</option>
+            <option id="military" value="military" disabled style="font-weight: 900;">Military</option>
+            <option id="smithy" value="smithy">Smithy</option>
+            <option id="tournament square" value="tournament square">Tournament Square</option>
+            <option id="rally point" value="rally point">Rally Point</option>
+            <option id="barracks" value="barracks">Barracks</option>
+            <option id="stable" value="stable">Stable</option>
+            <option id="workshop" value="workshop">Workshop</option>
+            <option id="academy" value="academy">Academy</option>
+            <option id="heros mansion" value="heros mansion">Heros Mansion</option>
+
+          </select>
+        </div>
+ 
+        </div>
+            <div class="flex-container" style="margin-top: 2px;">
+
+              <div class="flex-child magenta">
+                <button style="margin-top: 5px;" id="saveButton">Add task</button>
+             </div>
+        </div>
+      </div>
+
+      <div>
+        <a style="font-size: 20px; font-weight: 900; color: green;" id="info"></a>
+      </div>
+
+        <script>
+
+          const {ipcRenderer, remote} = require('electron');
+          const fs = require('fs');
+
+          const select = document.getElementById("villages");
+          const info = document.getElementById("info");
+
+          const select_root = document.getElementById("select_root");
+
+          let taskOption;
+          let villageValue;
+          let repeat = "on_repeat";
+
+          document.addEventListener("DOMContentLoaded", function(event) {
+         
+          let rawdata = fs.readFileSync('villages.json');
+          let data = JSON.parse(rawdata);
+
+          let res_build_options = document.getElementById('resource_option_div');
+          res_build_options.style.visibility = "hidden";
+
+          let city_build_options_div = document.getElementById('city_build_options_div');
+          city_build_options_div.style.visibility = "hidden";
+
+          for (let i = 0; i < data.length; i++){
+              let option = document.createElement("option");
+              option.value = data[i];
+              option.innerText = data[i];
+              select.appendChild(option);
+          }
+          });
+
+const getVillages = document.getElementById("getButton");
+       getVillages.addEventListener("click", function(e){
+        ipcRenderer.send('get-villages', "");
+        info.style.color="red";
+        info.innerText = "Updating village data...";
+},false);
+
+      ipcRenderer.on('village-update', (event, logObject) => {
+        let rawdata = fs.readFileSync('villages.json');
+          let data = JSON.parse(rawdata);
+        
+            let child = select.lastElementChild;  
+            while (child) { 
+            select.removeChild(child); 
+            child = select.lastElementChild;
+            } 
+
+          for (let i = 0; i < data.length; i++){
+              let option = document.createElement("option");
+              option.value = data[i];
+              option.innerText = data[i];
+              select.appendChild(option);
+          }
+          info.style.color="green";
+          info.innerText = "Village data succesfully updated";
+          setTimeout(() => {
+            info.innerText = "";
+          }, 5000);
+          });
+
+          function showOptions_resBuild(){
+            let res_build_options = document.getElementById('resource_option_div');
+            const task = document.getElementById("task").value;
+            let city_build_options_div = document.getElementById('city_build_options_div');
+            if(task == "build_res"){
+            res_build_options.style.visibility = "visible";
+            }
+            else{
+              res_build_options.style.visibility = "hidden";
+            }
+            if(task == "build_city"){
+            city_build_options_div.style.visibility = "visible";
+            }
+            else{
+              city_build_options_div.style.visibility = "hidden";
+            }
+          }
+
+          function changeResBuildValue(){
+            taskOption = document.getElementById('res_build_options').value;
+          }
+
+          function changeCityBuildValue(){
+            taskOption = document.getElementById('city_build_options').value;
+          }
+
+          function changeVillage(){
+            villageValue = document.getElementById('villages').value;
+          }
+
+          function repeat_options(){
+            repeat = document.getElementById('repeat').value;
+          }
+
+      const save = document.getElementById("saveButton");
+      save.addEventListener("click", function(e){
+      let task = [];
+      if (document.querySelector("#task").value == "build_res" || document.querySelector("#task").value == "build_city"){
+      task = ({
+      village: villageValue,
+      repeat: repeat,
+      task: document.querySelector("#task").value,
+      options: taskOption
+      });
+    }
+    else if (document.querySelector("#task").value == "party"){
+      task = ({
+      village: villageValue,
+      repeat: repeat,
+      task: document.querySelector("#task").value,
+      options: "town hall"
+      });
+    }
+      info.style.color="red";
+      info.innerText = "Adding task...";
+      setTimeout(() => {
+        ipcRenderer.send('add-task', task);
+      }, 2000);
+},false);
+
+ipcRenderer.on('task-added', (event, logObject) => {
+          info.style.color="green";
+          info.innerText = "Task added succesfully";
+          setTimeout(() => {
+            info.innerText = "";
+          }, 5000);
+          });      
+
+</script>
+</body>
+</html>

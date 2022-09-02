@@ -1,0 +1,125 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <style>
+    .flex-container {
+    display: flex;
+}
+
+.flex-child {
+    flex: 1;
+  }  
+
+.flex-child:first-child {
+    margin-right: 20px;
+} 
+  </style>
+  <meta charset="utf-8">
+  <title>User Config</title>
+</head>
+
+<body>
+    <h1>User Config</h1>
+        <div>
+            <input type="text" id="userAgent" placeholder="User Agent" style="margin-top: 5px;">
+            <input type="text" id="server" placeholder="Server" style="margin-top: 5px;">
+            <input type="text" id="username" placeholder="Username" style="margin-top: 5px;">
+            <input type="password" id="password" placeholder="Password" style="margin-top: 5px;">
+            <input type="text" id="farmlists" placeholder="Farmlists (100, 200, 300, ...)" style="margin-top: 5px;">
+            <input type="text" id="intervalMin" placeholder="Interval min [minutes]" style="margin-top: 5px;">
+            <input type="text" id="intervalMax" placeholder="Interval max [minutes]" style="margin-top: 5px;">
+            <label for="headless">Headless?</label>
+            <select id="headless">
+            <option value="true" selected>True</option>
+            <option value="false">False</option>
+            </select>
+            <div class="flex-container">
+
+              <div class="flex-child magenta">
+                <button style="margin-top: 5px;" id="saveButton">Save</button>
+              </div>
+              
+              <div class="flex-child green">
+                <button style="margin-top: 5px;" id="clearButton">Clear fields</button>
+              </div>
+        </div>
+
+        <div>
+          <p>If the bot is not working, please double check your config info and select chrome.exe from the button below
+            usually found under C:\Program Files (x86)\Google\Chrome\Application
+            <button style="margin-top: 5px;" id="selectFile">Select</button>
+          </p>
+        </div>
+
+        <script>
+
+          const {ipcRenderer, remote} = require('electron');
+          const fs = require('fs');
+
+          document.addEventListener("DOMContentLoaded", function(event) {
+         
+          let rawdata = fs.readFileSync('config.json');
+          let config = JSON.parse(rawdata);
+
+          document.querySelector("#userAgent").value = config.userAgent;
+          document.querySelector("#server").value = config.server;
+          document.querySelector("#username").value = config.username;
+          document.querySelector("#password").value = config.password;
+          document.querySelector("#farmlists").value = config.farmlists;
+          document.querySelector("#intervalMin").value = config.intervalMin;
+          document.querySelector("#intervalMax").value = config.intervalMax;
+          });
+
+
+    const save = document.getElementById("saveButton");
+       save.addEventListener("click", function(e){
+     const data = ({
+      userAgent: document.querySelector("#userAgent").value,
+      server: document.querySelector("#server").value,
+      username: document.querySelector("#username").value,
+      password: document.querySelector("#password").value,
+      farmlists: document.querySelector("#farmlists").value,
+      intervalMin: document.querySelector("#intervalMin").value,
+      intervalMax: document.querySelector("#intervalMax").value,
+      headless: document.querySelector("#headless").value,
+      });
+      ipcRenderer.send('config-update', data);
+},false);
+
+const clear = document.getElementById("clearButton");
+       clear.addEventListener("click", function(e){
+      document.querySelector("#userAgent").value = null;
+      document.querySelector("#server").value = null;
+      document.querySelector("#username").value = null;
+      document.querySelector("#password").value = null;
+      document.querySelector("#farmlists").value = null;
+      document.querySelector("#intervalMin").value = null;
+      document.querySelector("#intervalMax").value = null;
+},false);
+
+const dialog = remote.dialog; 
+let fileName; 
+
+document.getElementById('selectFile').addEventListener('click', openFile);
+
+//Runs when select location button is clicked.
+function openFile(){
+
+  dialog.showOpenDialog(function (fileNames) {
+    if (fileNames === undefined) return;
+
+ fileName = fileNames[0];
+
+ fs.readFile(fileName, 'utf-8', function (err, data) {
+
+   document.getElementById("fileValue").value = fileName;
+
+     ipcRenderer.send('pathUpdate', fileName);
+     });
+  });
+}
+
+</script>
+</body>
+</html>

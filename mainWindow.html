@@ -1,0 +1,231 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <style>
+.header{
+font-size: 15px;
+text-align: center;
+color: blue;
+border-bottom-color:red;
+border-bottom-style: Solid;
+border-bottom-width: 2px;
+border-top-color:red;
+border-top-style: Solid;
+border-top-width: 2px;
+border-left-color: green;
+border-left-style: groove;
+border-left-width: 250px;
+border-right-color: green;
+border-right-style: groove;
+border-right-width: 250px;
+font-weight: 900;
+
+}
+  </style>
+  <meta charset="utf-8">
+  <title>Travian Bot</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+</head>
+
+<body>
+    <nav>
+      <div class="nav-wrapper">
+          <a class="brand-logo center">Travian Bot</a>
+      </div>
+    </nav>
+    <h2 id="state" class="header">State: Stopped</h2>
+    <div style="display: flex;">
+    <div style="border: solid blue 2px; margin-left: 20px;">
+      <h3 style="font-size: 14px; color: red; font-weight: 900;">Logs:</h3>
+      <div>
+        <ul id="logs">
+  
+        </ul>
+      </div>
+   </div>
+   <div style="margin-left: 10px; border: solid blue 2px">
+      <h3 style="font-size: 14px; color: red; font-weight: 900;">Tasks:</h3>
+      <div>
+        <ul id="tasks">
+  
+        </ul>
+      </div>
+   </div>
+  </div>
+
+  <script>
+    const {ipcRenderer} = require('electron');
+    const fs = require('fs');
+
+    const logs = document.getElementById("logs");
+    const state = document.getElementById("state");
+    const tasks = document.getElementById("tasks");
+    let id = 200;
+    let taskList = [];
+
+    document.addEventListener("DOMContentLoaded", function(event) {
+         
+         let rawdata = fs.readFileSync('tasks.json');
+         let data = JSON.parse(rawdata);
+
+         for (let i = 0; i < data.length; i++){
+             data[i] = JSON.stringify(data[i]);
+             let li = document.createElement("li");
+             let button = document.createElement("button");
+             li.innerText = data[i];
+             li.style.fontWeight = 600;
+             li.setAttribute("id", "task" + i);
+             button.setAttribute("id", "button" + i);
+             button.innerText = "Delete";
+             tasks.prepend(li);
+             li.appendChild(button);
+             button.onclick = function deleteTask(){
+               let id = button.getAttribute("id");
+               id = id.split("n")
+               id = id[1];
+               let element = document.getElementById("task"+id);
+               element.parentNode.removeChild(element);
+
+               taskList = [];
+
+               var nodes = document.getElementById('tasks').childNodes;
+               for(var i = 0; i < nodes.length; i++) {
+                 if (nodes[i] != undefined){
+                  let node = nodes[i].innerText;
+                  taskList.push(node);
+                 }
+              }
+              taskList = taskList.slice(0, -1);
+              for(var i = 0; i < taskList.length; i++) {
+                 taskList[i] = taskList[i].slice(0, -6);
+                 taskList[i] = taskList[i]+"\n";
+              }
+              if (taskList.length > 0){
+                fs.writeFileSync('tasks.json', "["+taskList+"]", (err) => {
+                 if (err) throw err;
+                 });
+                }
+                else{
+                  fs.unlinkSync("tasks.json");
+                }
+             }
+              }
+         });
+
+      ipcRenderer.on('log', (event, logObject) => {
+      const li = document.createElement("li");
+      li.style.fontWeight = 600;
+      const text = document.createTextNode(logObject);
+      li.appendChild(text);
+      logs.prepend(li);
+          });
+
+    ipcRenderer.on('state', (event, logObject) => {
+      state.innerHTML="State: " + logObject;
+          });
+
+      ipcRenderer.on('task-added', (event, taskObject) => {
+             let li = document.createElement("li");
+             let button = document.createElement("button");
+             li.innerText = taskObject;
+             li.style.fontWeight = 600;
+             li.setAttribute("id", "task" + id);
+             button.setAttribute("id", "button" + id);
+             button.innerText = "Delete";
+             tasks.prepend(li);
+             li.appendChild(button);
+             button.onclick = function deleteTask(){
+               let id = button.getAttribute("id");
+               id = id.split("n")
+               id = id[1];
+               let element = document.getElementById("task"+id);
+               element.parentNode.removeChild(element);
+
+               taskList = [];
+
+               var nodes = document.getElementById('tasks').childNodes;
+               for(var i = 0; i < nodes.length; i++) {
+                 if (nodes[i] != undefined){
+                  let node = nodes[i].innerText;
+                  taskList.push(node);
+                 }
+              }
+              taskList = taskList.slice(0, -1);
+              for(var i = 0; i < taskList.length; i++) {
+                 taskList[i] = taskList[i].slice(0, -6);
+                 taskList[i] = taskList[i]+"\n";
+              }
+              if (taskList.length > 0){
+                fs.writeFileSync('tasks.json', "["+taskList+"]", (err) => {
+                 if (err) throw err;
+                 });
+                }
+                else{
+                  fs.unlinkSync("tasks.json");
+                }
+             }
+          });
+
+          ipcRenderer.on('delete-task', (event, taskObject) => {
+            let tasks = document.getElementById("tasks");
+        
+            let child = tasks.lastElementChild;  
+            while (child) { 
+            tasks.removeChild(child); 
+            child = tasks.lastElementChild;
+            } 
+
+            setTimeout(() => {
+
+         let rawdata = fs.readFileSync('tasks.json');
+         let data = JSON.parse(rawdata);
+
+         for (let i = 0; i < data.length; i++){
+             data[i] = JSON.stringify(data[i]);
+             let li = document.createElement("li");
+             let button = document.createElement("button");
+             li.innerText = data[i];
+             li.style.fontWeight = 600;
+             li.setAttribute("id", "task" + i);
+             button.setAttribute("id", "button" + i);
+             button.innerText = "Delete";
+             tasks.prepend(li);
+             li.appendChild(button);
+             button.onclick = function deleteTask(){
+               let id = button.getAttribute("id");
+               id = id.split("n")
+               id = id[1];
+               let element = document.getElementById("task"+id);
+               element.parentNode.removeChild(element);
+
+               taskList = [];
+
+               var nodes = document.getElementById('tasks').childNodes;
+               for(var i = 0; i < nodes.length; i++) {
+                 if (nodes[i] != undefined){
+                  let node = nodes[i].innerText;
+                  taskList.push(node);
+                 }
+              }
+              taskList = taskList.slice(0, -1);
+              for(var i = 0; i < taskList.length; i++) {
+                 taskList[i] = taskList[i].slice(0, -6);
+                 taskList[i] = taskList[i]+"\n";
+              }
+              if (taskList.length > 0){
+                fs.writeFileSync('tasks.json', "["+taskList+"]", (err) => {
+                 if (err) throw err;
+                 });
+                }
+                else{
+                  fs.unlinkSync("tasks.json");
+                }
+             }
+              }
+            }, 3000);
+          });
+
+  </script>
+</body>
+</html>
